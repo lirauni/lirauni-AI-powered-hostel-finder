@@ -1707,10 +1707,27 @@ function submitBooking(e) {
 }
 
 // ── USERS TABLE ────────────────────────────────────────────────────────────
-function renderUsersTable() {
+async function renderUsersTable() {
     const tbody = document.getElementById('users-table-body');
     if (!tbody) return;
-    const users = getUsers();
+
+    let users = [];
+    try {
+        const data = await apiGetUsers();
+        users = data.map(u => ({
+            id:    u.id,
+            name:  u.name,
+            email: u.email,
+            phone: u.phone || '—',
+            type:  u.role   // backend uses 'role', frontend uses 'type'
+        }));
+        // Update user count stat card
+        const userCountEl = document.getElementById('admin-user-count');
+        if (userCountEl) userCountEl.textContent = users.length;
+    } catch (err) {
+        // Fallback to localStorage if backend offline
+        users = getUsers();
+    }
 
     if (users.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-400 text-sm">No registered users yet.</td></tr>';
@@ -1740,7 +1757,7 @@ function renderUsersTable() {
             </td>
             <td class="px-6 py-4">
                 <div class="flex space-x-2">
-                    <button onclick="deleteUser('${u.email}')" title="Remove user"
+                    <button onclick="deleteUser(${u.id}, '${u.email}')" title="Remove user"
                         class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -1750,10 +1767,15 @@ function renderUsersTable() {
     `).join('');
 }
 
-function deleteUser(email) {
+async function deleteUser(id, email) {
     if (!confirm('Remove user ' + email + '? This cannot be undone.')) return;
-    const users = getUsers().filter(u => u.email.toLowerCase() !== email.toLowerCase());
-    saveUsers(users);
+    try {
+        await apiDeleteUser(id);
+    } catch (err) {
+        // Fallback: remove from localStorage
+        const users = getUsers().filter(u => u.email.toLowerCase() !== email.toLowerCase());
+        saveUsers(users);
+    }
     renderUsersTable();
     renderAdminBookings();
     showToast('User removed.');
@@ -1850,13 +1872,17 @@ function deleteReview(id) {
 }
 
 function renderAdminBookings() {
-    // Update Total Users — registered users + unique bookers not already registered
+    // Update Total Users from API
     const userCountEl = document.getElementById('admin-user-count');
     if (userCountEl) {
-        const registeredEmails = new Set(getUsers().map(u => u.email.toLowerCase()));
-        const bookerEmails     = allBookings.map(b => b.email.toLowerCase());
-        bookerEmails.forEach(e => registeredEmails.add(e));
-        userCountEl.textContent = registeredEmails.size;
+        apiGetUsers().then(data => {
+            userCountEl.textContent = data.length;
+        }).catch(() => {
+            // Fallback to localStorage count
+            const registeredEmails = new Set(getUsers().map(u => u.email.toLowerCase()));
+            allBookings.map(b => b.email.toLowerCase()).forEach(e => registeredEmails.add(e));
+            userCountEl.textContent = registeredEmails.size;
+        });
     }
 
     // Update Total Hostels count from actual hostel cards in the DOM
