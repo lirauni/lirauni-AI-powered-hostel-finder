@@ -1,0 +1,25 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Environment variables (keep secrets out of GitHub)
+server/.env
+
+# Python
+__pycache__/
+*.py
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+
+# Backups
+backups/
+
+# Logs
+*.log
