@@ -21,17 +21,30 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// 2. CORS — restrict to your own origin in production
-//    In development we allow localhost:5000 and file:// (direct open)
+// 2. CORS — allow localhost for dev and live domains for production
 const allowedOrigins = [
     'http://localhost:5000',
-    'http://127.0.0.1:5000'
+    'http://127.0.0.1:5000',
+    'http://localhost:3000',
+    // GitHub Pages
+    'https://lirauni.github.io',
+    // Allow any Railway/Render/Vercel preview URLs
 ];
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, Postman)
+        // Allow requests with no origin (mobile apps, curl, Postman, file://)
         if (!origin) return callback(null, true);
+        // Allow any github.io subdomain
+        if (origin.endsWith('.github.io')) return callback(null, true);
+        // Allow any railway.app subdomain
+        if (origin.endsWith('.railway.app')) return callback(null, true);
+        // Allow any render.com subdomain
+        if (origin.endsWith('.onrender.com')) return callback(null, true);
+        // Allow any netlify.app subdomain
+        if (origin.endsWith('.netlify.app')) return callback(null, true);
         if (allowedOrigins.includes(origin)) return callback(null, true);
+        // In development allow all
+        if (process.env.NODE_ENV !== 'production') return callback(null, true);
         callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

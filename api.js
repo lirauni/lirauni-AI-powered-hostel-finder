@@ -1,10 +1,16 @@
 // ══════════════════════════════════════════════════════════════
 //  LiraUniHostel — API Client
-//  All communication with the backend goes through this file.
-//  Backend: http://localhost:5000/api
+//  Automatically uses the correct backend URL:
+//  - Local development: http://localhost:5000/api
+//  - Production (GitHub Pages): your Railway backend URL
 // ══════════════════════════════════════════════════════════════
 
-const API = 'http://localhost:5000/api';
+const PROD_API = 'https://lirauni-hostel-production.up.railway.app/api';
+const DEV_API  = 'http://localhost:5000/api';
+
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? DEV_API
+    : PROD_API;
 
 // ── TOKEN HELPERS ──────────────────────────────────────────────
 function getToken()        { return localStorage.getItem('liraToken'); }
